@@ -7,6 +7,7 @@ import (
 
 const s string = "constant"
 
+// Go 支持字符、字符串、布尔值和数字值的常量。
 func main() {
 	fmt.Println(s)
 
