@@ -16,6 +16,8 @@ func zeroptr(iptr *int) {
 	*iptr = 0
 }
 
+const SIZE = 5
+
 func main() {
 	i := 1
 	fmt.Println("initial:", i)
@@ -27,4 +29,26 @@ func main() {
 	fmt.Println("zeroptr:", i)
 
 	fmt.Println("pointer:", &i)
+
+	var ptrArray [SIZE]*int
+	a := [5]int{1, 2, 3, 4, 5}
+	for i := 0; i < SIZE; i++ {
+		ptrArray[i] = &a[i]
+	}
+
+	for i := 0; i < SIZE; i++ {
+		fmt.Printf("%d ", *ptrArray[i])
+	}
+	fmt.Println()
+
+	//指向指针的指针
+	var a1 int = 100
+	var ptr1 *int = &a1
+	var ptr2 **int = &ptr1
+	var ptr3 ***int = &ptr2
+
+	fmt.Println("*ptr1=", *ptr1)
+	fmt.Println("**ptr2=", **ptr2)
+	fmt.Println("***ptr3=", ***ptr3)
+
 }
