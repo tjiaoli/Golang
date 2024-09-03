@@ -7,8 +7,8 @@ import (
 
 func main() {
 	//有缓冲区的channel，可以通过make的时候指定容量
-	ch := make(chan int, 2)
-	// 下面2个发送操作不用阻塞等待接收方接收数据
+	ch := make(chan int, 3)
+	// 下面2个发送操作不用阻塞等待接收方接收数据,如果是没有缓冲区此处会阻塞
 	ch <- 10
 	ch <- 20
 	/*
@@ -30,10 +30,10 @@ func main() {
 		fmt.Println("value:", value)
 	}()
 
-	fmt.Println(<-ch) // 20
-
 	wg.Wait()
-	ch <- 30
 
-	ch <- 4
+	close(ch)
+	//关闭后还能取值
+	fmt.Println(<-ch) // 20
+	fmt.Println(<-ch) // 0
 }

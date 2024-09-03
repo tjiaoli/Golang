@@ -10,7 +10,7 @@ func addData(ch chan int) {
 	size := cap(ch)
 	for i := 0; i < size; i++ {
 		ch <- i
-		time.Sleep(3 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
 	// 数据发送完毕，关闭通道
 	close(ch)

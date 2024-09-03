@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func main() {
 	ch := make(chan int, 10)
@@ -22,4 +24,5 @@ func main() {
 			break
 		}
 	}
+
 }

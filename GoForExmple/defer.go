@@ -28,4 +28,34 @@ func main() {
 	// Wait会一直等待，直到wg的计数器为0
 	wg.Wait()
 	fmt.Println("finish")
+
+	i := 0
+	defer fmt.Println("i:", i) //虽然defer是最后执行但是被defer的函数的参数在执行defer的时候就被确认了
+	i++
+
+	//被defer的函数执行 后进先出（Last In First Out），后进的先执行
+	for i := 0; i < 4; i++ {
+		if i == 0 {
+			defer fmt.Println(i)
+		} else {
+			defer fmt.Print(i)
+		}
+	}
+
+	fmt.Println("result:", f())
+}
+
+// f returns 42
+// 被defer的函数可以对defer语句所在的函数的命名返回值做读取和修改操作
+func f() (result int) {
+	//defer后面跟的必须是函数或者方法调用，defer后面的表达式不能加括号。
+	//defer result *=7
+	defer func() {
+		result -= 1
+	}()
+	defer func() {
+		// result is accessed after it was set to 6 by the return statement
+		result *= 7
+	}()
+	return 6
 }
