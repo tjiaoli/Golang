@@ -5,15 +5,15 @@ import (
 	"eth-api/internal/database"
 	"eth-api/internal/database/dataRepository"
 	"eth-api/internal/models"
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"strconv"
 )
 
 // 获取区块数据 API
 func GetBlock(c *gin.Context) {
 	blockNum := c.Param("block_num")
-	//full := c.DefaultQuery("full", "false") == "true"
+	full := c.DefaultQuery("full", "false") == "true"
 
 	blockRepo := dataRepository.NewBlocksRepository()
 
@@ -25,17 +25,20 @@ func GetBlock(c *gin.Context) {
 		if blockNum == "head" || blockNum == "finalized" || blockNum == "safe" {
 			//查redis
 			blockData, err = database.GetBlockFromRedis(blockNum)
-			//从区块链中取数
-			block, err := blockchain.GetBlockFromChain(blockNum, true)
-			if err != nil {
-				fmt.Println("blockDataError:", err)
-				c.JSON(400, gin.H{"blockDataError": err})
-				return
-			} else {
-				c.JSON(200, gin.H{"block": block})
-				return
+			if blockData == nil {
+				//从区块链中取数
+				block, err := blockchain.GetBlockFromChain(blockNum, full)
+				if err != nil {
+					//没有获取到区块信息
+					c.JSON(http.StatusNotFound, gin.H{"blockDataError": err})
+					return
+				} else {
+					//获取到区块信息存储到redis和数据库
+					_, msg, state := blockchain.SaveBlocks(blockNum, block, full)
+					c.JSON(state, gin.H{"message": msg, "block": block})
+					return
+				}
 			}
-
 		}
 
 	} else {

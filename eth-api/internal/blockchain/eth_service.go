@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"eth-api/internal/database"
+	"eth-api/internal/database/dataRepository"
 	"eth-api/internal/models"
 	"fmt"
 	"log"
@@ -22,4 +24,25 @@ func GetBlockFromChain(blockNum string, full bool) (*models.Block, error) {
 		return nil, err
 	}
 	return block, nil
+}
+
+func SaveBlocks(blockNum string, blockData *models.Block, full bool) (*models.Block, string, int) {
+
+	blockRepo := dataRepository.NewBlocksRepository()
+
+	RedisErr := database.SaveBlockToRedis(blockNum, blockData)
+	if RedisErr != nil {
+		MysqlErr := blockRepo.SaveBlockToMySQL(blockData)
+		if MysqlErr != nil {
+			return blockData, "SaveBlockToRedisError: " + RedisErr.Error() + ", saveBlockToMySQLError: " + MysqlErr.Error(), 500
+		} else {
+			return blockData, RedisErr.Error(), 200
+		}
+	} else {
+		MysqlErr := blockRepo.SaveBlockToMySQL(blockData)
+		if MysqlErr != nil {
+			return blockData, "saveBlockToMySQLError: " + MysqlErr.Error(), 500
+		}
+	}
+	return blockData, "查询并完成存储", 200
 }

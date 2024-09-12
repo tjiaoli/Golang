@@ -47,3 +47,28 @@ func GetBlockFromRedis(blockIdentifier string) (*models.Block, error) {
 
 	return &block, err
 }
+
+// 将区块数据保存到Redis
+func SaveBlockToRedis(blockIdentifier string, blockData *models.Block) error {
+	return saveToRedis(blockIdentifier+"_Block", blockData)
+}
+
+// 保存交易数据
+func SaveTxToRedis(blockIdentifier string, tx *models.Transaction) error {
+	return saveToRedis(blockIdentifier+"_TX", tx)
+}
+
+func saveToRedis(blockIdentifier string, data interface{}) error {
+	jsonData, jsonerr := json.Marshal(data)
+	if jsonerr != nil {
+		log.Printf("Failed to marshal tx data: %v", jsonerr)
+		return jsonerr
+	}
+
+	err := redisClient.Set(ctx, blockIdentifier, jsonData, 0).Err()
+	if err != nil {
+		log.Printf("Failed to save tx to Redis: %v", err)
+		return err
+	}
+	return nil
+}
