@@ -9,10 +9,10 @@ import (
 )
 
 // 从链上获取区块数据
-func GetBlockFromChain(blockNum string, full bool) (*models.Block, error) {
+func GetBlockFromChain(blockNum string, full bool) (*models.Block, []*models.Transaction, error) {
 	if EthClient == nil {
 		log.Println("Ethereum client is not initialized")
-		return nil, fmt.Errorf("Ethereum client is not initialized")
+		return nil, nil, fmt.Errorf("Ethereum client is not initialized")
 	}
 	if blockNum == "head" {
 		blockNum = "latest"
@@ -21,12 +21,22 @@ func GetBlockFromChain(blockNum string, full bool) (*models.Block, error) {
 
 	if err != nil {
 		log.Printf("Failed to get block from chain: %v", err)
-		return nil, err
+		return nil, nil, err
 	}
-	return block, nil
+
+	if full {
+		blockTx, blockTxerr := GetTxFromChain(blockNum)
+		if blockTxerr != nil {
+			return block, nil, blockTxerr
+		} else {
+			return block, blockTx, nil
+		}
+	}
+
+	return block, nil, nil
 }
 
-func SaveBlocks(blockNum string, blockData *models.Block, full bool) (*models.Block, string, int) {
+func SaveBlocks(blockNum string, blockData *models.Block, blockTx []*models.Transaction, full bool) (*models.Block, string, int) {
 
 	blockRepo := dataRepository.NewBlocksRepository()
 
@@ -42,6 +52,13 @@ func SaveBlocks(blockNum string, blockData *models.Block, full bool) (*models.Bl
 		MysqlErr := blockRepo.SaveBlockToMySQL(blockData)
 		if MysqlErr != nil {
 			return blockData, "saveBlockToMySQLError: " + MysqlErr.Error(), 500
+		}
+	}
+	//如果full==true那需要存储交易数据
+	if full {
+		blockTxErr := blockRepo.SaveTxToMySQL(blockTx)
+		if blockTxErr != nil {
+			return blockData, "saveBlockTxToMySQLError:" + blockTxErr.Error(), 500
 		}
 	}
 	return blockData, "查询并完成存储", 200

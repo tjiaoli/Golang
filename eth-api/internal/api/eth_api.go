@@ -27,14 +27,14 @@ func GetBlock(c *gin.Context) {
 			blockData, err = database.GetBlockFromRedis(blockNum)
 			if blockData == nil {
 				//从区块链中取数
-				block, err := blockchain.GetBlockFromChain(blockNum, full)
+				block, blockTx, err := blockchain.GetBlockFromChain(blockNum, full)
 				if err != nil {
 					//没有获取到区块信息
 					c.JSON(http.StatusNotFound, gin.H{"blockDataError": err})
 					return
 				} else {
 					//获取到区块信息存储到redis和数据库
-					_, msg, state := blockchain.SaveBlocks(blockNum, block, full)
+					_, msg, state := blockchain.SaveBlocks(blockNum, block, blockTx, full)
 					c.JSON(state, gin.H{"message": msg, "block": block})
 					return
 				}
