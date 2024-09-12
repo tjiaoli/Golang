@@ -2,6 +2,9 @@ package database
 
 import (
 	"context"
+	"encoding/json"
+	"eth-api/config"
+	"eth-api/internal/models"
 	"github.com/go-redis/redis/v8"
 	"log"
 )
@@ -11,11 +14,36 @@ var ctx = context.Background()
 
 func InitRedis() {
 	redisClient = redis.NewClient(&redis.Options{
-		Addr: "192.168.190.157:6379",
+		Addr: config.GetRedisAddr(),
 		DB:   0, // 默认数据库
 	})
 	_, err := redisClient.Ping(ctx).Result()
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
+}
+
+// 从Redis中获取区块数据
+func GetBlockFromRedis(blockIdentifier string) (*models.Block, error) {
+	blockData, err := redisClient.Get(ctx, blockIdentifier).Result()
+	if err == redis.Nil {
+		return nil, err
+	} else if err != nil {
+		log.Printf("Failed to get block from Redis: %v", err)
+	}
+
+	// 检查 blockData 是否为 "null" 或空字符串
+	if blockData == "" || blockData == "null" {
+		log.Printf("Block data is null or empty for identifier: %s", blockIdentifier)
+		return nil, nil // 这里可以选择返回 nil 或者自定义的错误
+	}
+
+	var block models.Block // 假设这是你定义的区块结构体
+	jsonerr := json.Unmarshal([]byte(blockData), &block)
+	if jsonerr != nil {
+		log.Printf("Failed to unmarshal block data: %v", err)
+		return nil, jsonerr
+	}
+
+	return &block, err
 }
