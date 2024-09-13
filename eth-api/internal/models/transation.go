@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"math/big"
+	"time"
+)
 
 type Transaction struct {
 	ID          int64     `gorm:"primaryKey;autoIncrement" json:"id" comment:"自增主键，交易唯一标识"`
@@ -9,7 +12,7 @@ type Transaction struct {
 	BlockNumber int64     `json:"block_number" comment:"所属区块的区块号"`
 	FromAddress string    `gorm:"size:42" json:"from_address" comment:"发送方地址，42个字符，开头为0x"`
 	ToAddress   string    `gorm:"size:42" json:"to_address" comment:"接收方地址，42个字符，开头为0x"`
-	Value       float64   `gorm:"type:decimal(38,0)" json:"value" comment:"交易发送的以太坊数量"`
+	Value       *big.Int  `gorm:"type:decimal(38,0)" json:"value" comment:"交易发送的以太坊数量"`
 	GasPrice    int64     `json:"gas_price" comment:"交易的Gas价格"`
 	GasUsed     int64     `json:"gas_used" comment:"交易消耗的Gas量"`
 	Nonce       int64     `json:"nonce" comment:"发送方账户的交易序号"`

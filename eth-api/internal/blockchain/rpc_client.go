@@ -5,6 +5,7 @@ import (
 	"eth-api/internal/models"
 	"fmt"
 	"log"
+	"math/big"
 	"strconv"
 	"time"
 )
@@ -147,7 +148,7 @@ func GetTxFromChain(blockIdentifier string) ([]*models.Transaction, error) {
 				BlockNumber: parseStringToInt64(safeString(txData, "blockNumber")),
 				FromAddress: safeString(txData, "from"),
 				ToAddress:   safeString(txData, "to"),
-				Value:       parseStringToDecimal(safeString(txData, "value")),
+				Value:       parseStringToBigInt(safeString(txData, "value")),
 				GasPrice:    parseStringToInt64(safeString(txData, "gasPrice")),
 				GasUsed:     parseStringToInt64(safeString(txData, "gas")),
 				Nonce:       parseStringToInt64(safeString(txData, "nonce")),
@@ -170,10 +171,13 @@ func safeString(data map[string]interface{}, key string) string {
 	return ""
 }
 
-func parseStringToDecimal(value string) float64 {
-	if parsedValue, err := strconv.ParseFloat(value, 64); err == nil {
-		return parsedValue
+func parseStringToBigInt(value string) *big.Int {
+	bigIntValue := new(big.Int)
+	// The second parameter 0 means auto-detect the base (10 or 16 based on prefix)
+	_, ok := bigIntValue.SetString(value, 0)
+	if !ok {
+		log.Printf("Failed to parse string to *big.Int: %v", value) // Logging the error
+		return nil                                                  // Return nil or handle the error appropriately
 	}
-	log.Printf("Failed to parse string to decimal: %v", value) // Logging the error
-	return 0.0                                                 // Return default value or handle error appropriately
+	return bigIntValue
 }

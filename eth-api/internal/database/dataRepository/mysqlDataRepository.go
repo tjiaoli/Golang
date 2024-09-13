@@ -29,7 +29,7 @@ func (repo *BlocksRepository) GetBlockFromMySQL(blockNum int) *models.Block {
 
 // 保存区块数据到MySQL
 func (repo *BlocksRepository) SaveBlockToMySQL(blockData *models.Block) error {
-	result := repo.db.Table("blocks").Create(blockData)
+	result := repo.db.Table("blocks").Save(blockData)
 	if result.Error != nil {
 		log.Printf("Failed to save block to MySQL: %v", result.Error)
 		return result.Error
@@ -44,7 +44,7 @@ func (repo *BlocksRepository) SaveTxToMySQL(txDataList []*models.Transaction) er
 		//查对应hash是都已经存储
 		_, err := repo.GetTxFromMySQL(txHash)
 		if err != nil {
-			result := repo.db.Table("transactions").Create(tx)
+			result := repo.db.Table("transactions").Save(tx)
 			if result.Error != nil {
 				return fmt.Errorf("failed to save transaction %s: %v", tx.TxHash, result.Error)
 			}
