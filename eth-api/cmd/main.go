@@ -5,7 +5,6 @@ import (
 	"eth-api/internal/api"
 	"eth-api/internal/blockchain"
 	"eth-api/internal/database"
-	"github.com/gin-gonic/gin"
 	"log"
 	"sync"
 )
@@ -29,10 +28,6 @@ func main() {
 	//初始化redis
 	database.InitRedis()
 	blockchain.InitEthC()
-
-	r := gin.Default()
-	r.GET("/eth/block/:block_num", api.GetBlock)
-
-	// 启动服务器
-	r.Run(":8080")
+	//路由
+	api.RegisterEthRoutes()
 }
