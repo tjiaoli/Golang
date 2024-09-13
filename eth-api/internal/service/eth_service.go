@@ -2,14 +2,17 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"eth-api/internal/blockchain"
 	"eth-api/internal/database"
 	"eth-api/internal/database/dataRepository"
 	"eth-api/internal/models"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"log"
 	"math/big"
+	"time"
 )
 
 // 从链上获取区块数据
@@ -18,9 +21,7 @@ func GetBlockFromChain(blockNum string, full bool) (*models.Block, []*models.Tra
 		log.Println("Ethereum client is not initialized")
 		return nil, nil, fmt.Errorf("Ethereum client is not initialized")
 	}
-	if blockNum == "head" {
-		blockNum = "latest"
-	} else if blockNum == "safe" {
+	if blockNum == "safe" {
 		blockNum = "pending"
 	}
 	block, err := blockchain.GetBlockByNumber(blockNum, full)
@@ -131,4 +132,79 @@ func GetBlockByNumber(blockNumInt int, full bool) (*models.Block, []*models.Tran
 		}
 	}
 	return blockData, transactions, nil
+}
+
+func GetTxFromChainByTxHash(txHash string) (*models.Transaction, error) {
+	if blockchain.EthClient == nil {
+		log.Println("Ethereum client is not initialized")
+		return nil, fmt.Errorf("Ethereum client is not initialized")
+	}
+	blockHash := common.HexToHash(txHash)
+	tx, isPending, err := blockchain.EthClient.TransactionByHash(context.Background(), blockHash)
+
+	if isPending {
+		fmt.Println("Transaction is pending")
+	} else {
+		fmt.Println("Transaction is confirmed")
+	}
+
+	if err != nil {
+		//log.Printf("Failed to get transaction from chain: %v", err)
+		return nil, fmt.Errorf("Failed to get transaction from chain: %v", err)
+	}
+
+	// 手动将返回的 map 数据解析到 Transaction 结构体
+	var fromAddress string
+	chainID, err := blockchain.EthClient.NetworkID(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	if sender, err := types.Sender(types.NewEIP155Signer(chainID), tx); err == nil {
+		fmt.Println("sender", sender.Hex())
+		fromAddress = sender.Hex()
+	}
+	transaction := &models.Transaction{
+		TxHash:    tx.Hash().Hex(),
+		BlockHash: txHash,
+		//BlockNumber: tx.
+		FromAddress: fromAddress,
+		ToAddress:   tx.To().Hex(),
+		Value:       tx.Value(), // 如果需要精确处理，可能需要其他方法
+		GasPrice:    tx.GasPrice().Int64(),
+		GasUsed:     int64(tx.Gas()),
+		Nonce:       int64(tx.Nonce()),
+		InputData:   fmt.Sprintf("%x", tx.Data()),
+	}
+	return transaction, nil
+}
+
+func GetTransactionReceipt(txHash string) (*models.TransactionReceipt, error) {
+	// 调用以太坊客户端获取交易收据
+	blockHash := common.HexToHash(txHash)
+	txReceipt, err := blockchain.EthClient.TransactionReceipt(context.Background(), blockHash)
+	if err != nil {
+		log.Printf("Failed to get transaction receipt from chain: %v", err)
+		return nil, err
+	}
+
+	logsJSON, err := json.Marshal(txReceipt.Logs)
+	if err != nil {
+		log.Printf("Failed to marshal logs: %v", err)
+		return nil, err
+	}
+	// 构建 TransactionReceipt 结构体
+	transactionReceipt := &models.TransactionReceipt{
+		TxHash:            txReceipt.TxHash.Hex(),          // 转换为字符串
+		BlockHash:         txReceipt.BlockHash.Hex(),       // 转换为字符串
+		BlockNumber:       txReceipt.BlockNumber,           // uint64
+		CumulativeGasUsed: txReceipt.CumulativeGasUsed,     // uint64
+		GasUsed:           txReceipt.GasUsed,               // uint64
+		ContractAddress:   txReceipt.ContractAddress.Hex(), // string
+		Status:            txReceipt.Status,                // uint64
+		Logs:              string(logsJSON),                // 日志的JSON字符串
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+	}
+
+	return transactionReceipt, nil
 }

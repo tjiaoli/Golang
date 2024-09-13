@@ -73,3 +73,23 @@ func (repo *BlocksRepository) GetTxFromMySQL(txHash string) (*models.Transaction
 
 	return &txData, nil
 }
+
+// 获取交易存根数据（从MySQL）
+func (repo *BlocksRepository) GetReceiptFromMySQL(txHash string) *models.TransactionReceipt {
+	var receiptData models.TransactionReceipt
+	result := repo.db.Table("receipts").Where("tx_hash = ?", txHash).First(&receiptData)
+	if result.Error != nil {
+		return nil
+	}
+	return &receiptData
+}
+
+// 保存交易存根数据到MySQL
+func (repo *BlocksRepository) SaveReceiptToMySQL(receiptData *models.TransactionReceipt) error {
+	result := repo.db.Table("transaction_receipts").Create(receiptData)
+	if result.Error != nil {
+		log.Printf("Failed to save receipt to MySQL: %v", result.Error)
+		return result.Error
+	}
+	return nil
+}
