@@ -1,0 +1,6 @@
+infura:
+  url: http://ganache.address:8545
+redis:
+  addr: redis.address:6379
+mysql:
+  dsn : root:password@tcp(mysql.address:3306)/ethdb?charset=utf8mb4&parseTime=True&loc=Local
